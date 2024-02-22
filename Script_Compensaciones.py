@@ -1,13 +1,16 @@
 import re
+import mpmath as mp
 from datetime import date, timedelta, datetime
 from openpyxl import Workbook, load_workbook
 from colorama import Fore
 from bs4 import BeautifulSoup
 import requests 
 
-url_datos = "https://backend.jaha.com.py/compensaciones/tarjetas_diferencias_eventos"
 
 ##########################################################################################
+
+
+url_datos = "https://backend.jaha.com.py/compensaciones/tarjetas_diferencias_eventos"
 
 # url_ingresos_ps = "https://backoffice.jaha.com.py/reportes/ingresospsdetallado"
 
@@ -52,27 +55,13 @@ print(datos_ultima_compensacion)
 ###################################### MODULO EXCEL ######################################
 ##########################################################################################
 
-# Dev
-# excelName = datetime.today()
-# excelName = excelName.strftime('%Y-%m-%d %H_%M_%S.xlsx')
-# excelObject = Workbook()
-# excelObject.save(excelName)
-# hojaName = 'Hojarda'
-# hojaObject = excelObject.create_sheet(hojaName)
-# excelObject.save(excelName)
-
-# Casi Prod
 excelName = "Planilla de Tiempos de Compensaciones de PY.xlsx"
 hojaName = "Datos Backend"
 excelObject = load_workbook(excelName)
 hojaObject = excelObject[hojaName]
 
-# Dev
-# hojaObject = excelObject[hojaName]
-# value = hojaObject['B21'].value #5674
-# print(value)
 
-fecha_index = None
+fecha_index = None  # Valor de referencia para fecha
 
 # Ciclo para obtener el indice de la celda donde esta la ultima compensacion
 index_tabla = 7 # Un valor de referencia para reducir la cantidad de iteraciones
@@ -87,36 +76,6 @@ datos_ultima_compensacion = re.sub(r"\s+", ";", datos_ultima_compensacion)
 
 print(datos_ultima_compensacion)
 
-
-# hojaObject['A1'] = datos_ultima_compensacion
-
-# excelObject.save(excelName)
-
-
-# hojaObject['B{index_tabla}'.format(index_tabla = index_tabla)] = datos_ultima_compensacion
-        
-# print("Posicion " + str(index_tabla))
-# print(fecha_index)
-
-
-# Ejemplo para llenar celda
-# hojaObject['B22'] = "Texto Prueba"
-
-
-
-
-# excelObject.save(excelName)
-
-
-
-#wb.save(excelname)
-
-
-
-# ################# Variables #################
-# extracted_text = datos_ultima_compensacion[:datos_ultima_compensacion.find(";")]
-# datos_ultima_compensacion = datos_ultima_compensacion[datos_ultima_compensacion.find(";") + 1:]
-
 def extractor_datos(texto):
     textoExtraido = texto[:texto.find(";")]
     texto = texto[texto.find(";") + 1:]
@@ -126,9 +85,22 @@ def extractor_datos(texto):
     return textoExtraido, texto
 
 def rellena_celda(texto, fila, columna):
-    hojaObject['{fila}{columna}'.format(fila = fila, columna = columna)] = texto
+    # hojaObject['{fila}{columna}'.format(fila = fila, columna = columna)] = texto
+    #number_format = "0.00"
+    number_format = "#,##0"
 
-fila_index = 65 # 'A'
+    hojaObject.cell(row = columna, column = fila).value = texto
+    hojaObject.cell(row = columna, column = fila).number_format = number_format
+
+def rellena_celda_flotante(texto, fila, columna):
+    # hojaObject['{fila}{columna}'.format(fila = fila, columna = columna)] = texto
+    number_format = "0.00"
+    # number_format = "#,##0"
+
+    hojaObject.cell(row = columna, column = fila).value = texto
+    hojaObject.cell(row = columna, column = fila).number_format = number_format
+
+fila_index = 1 #65 # 'A'
 columna_index = index_tabla
 
 Fecha_base, datos_ultima_compensacion = extractor_datos(datos_ultima_compensacion)
@@ -152,27 +124,27 @@ Eventos_Totales_Cantidad, datos_ultima_compensacion = extractor_datos(datos_ulti
 Eventos_Totales_Porcent, datos_ultima_compensacion = extractor_datos(datos_ultima_compensacion)
 
 # rellena_celda(Fecha_base, chr(fila_index + 0), columna_index)
-rellena_celda(Tarjetas_Excluidas_Acumuladas, chr(fila_index + 1), columna_index)
-rellena_celda(Tarjetas_en_Espera_Acumuladas, chr(fila_index + 2), columna_index)
-rellena_celda(Tarjetas_Compensadas, chr(fila_index + 3), columna_index)
-rellena_celda(Eventos_Compensados, chr(fila_index + 4), columna_index)
-rellena_celda(Pago_TDP_a_EPAS_GS, chr(fila_index + 5), columna_index)
-rellena_celda(Pago_TDP_a_EPAS_USD, chr(fila_index + 6), columna_index)
-rellena_celda(Eventos_Excluidos_Cantidad, chr(fila_index + 7), columna_index)
-rellena_celda(Eventos_Excluidos_Porcent, chr(fila_index + 8), columna_index)
-rellena_celda(Eventos_En_Espera_Cantidad, chr(fila_index + 9), columna_index)
-rellena_celda(Eventos_En_Espera_Porcent, chr(fila_index + 10), columna_index)
-rellena_celda(Eventos_Listo_Cantidad, chr(fila_index + 11), columna_index)
-rellena_celda(Eventos_Listo_Porcent, chr(fila_index + 12), columna_index)
-rellena_celda(Eventos_en_Error_Cantidad, chr(fila_index + 13), columna_index)
-rellena_celda(Eventos_en_Error_Porcent, chr(fila_index + 14), columna_index)
-rellena_celda(Eventos_Perdidos_Cantidad, chr(fila_index + 15), columna_index)
-rellena_celda(Eventos_Perdidos_Porcent, chr(fila_index + 16), columna_index)
-rellena_celda(Eventos_Totales_Cantidad, chr(fila_index + 17), columna_index)
-rellena_celda(Eventos_Totales_Porcent, chr(fila_index + 18), columna_index)
+rellena_celda(int(Tarjetas_Excluidas_Acumuladas), (fila_index + 1), columna_index)
+rellena_celda(int(Tarjetas_en_Espera_Acumuladas), (fila_index + 2), columna_index)
+rellena_celda(int(Tarjetas_Compensadas), (fila_index + 3), columna_index)
+rellena_celda(int(Eventos_Compensados), (fila_index + 4), columna_index)
+rellena_celda_flotante(float(Pago_TDP_a_EPAS_GS.replace(",", ".")), (fila_index + 5), columna_index)
+rellena_celda((Pago_TDP_a_EPAS_USD), (fila_index + 6), columna_index)
+rellena_celda(int(Eventos_Excluidos_Cantidad), (fila_index + 7), columna_index)
+rellena_celda_flotante(float(Eventos_Excluidos_Porcent.replace(",", ".")), (fila_index + 8), columna_index)
+rellena_celda(int(Eventos_En_Espera_Cantidad), (fila_index + 9), columna_index)
+rellena_celda_flotante(float(Eventos_En_Espera_Porcent.replace(",", ".")), (fila_index + 10), columna_index)
+rellena_celda(int(Eventos_Listo_Cantidad), (fila_index + 11), columna_index)
+rellena_celda_flotante(float(Eventos_Listo_Porcent.replace(",", ".")), (fila_index + 12), columna_index)
+rellena_celda(int(Eventos_en_Error_Cantidad), (fila_index + 13), columna_index)
+rellena_celda_flotante(float(Eventos_en_Error_Porcent.replace(",", ".")), (fila_index + 14), columna_index)
+rellena_celda(int(Eventos_Perdidos_Cantidad), (fila_index + 15), columna_index)
+rellena_celda_flotante(float(Eventos_Perdidos_Porcent.replace(",", ".")), (fila_index + 16), columna_index)
+rellena_celda(int(Eventos_Totales_Cantidad), (fila_index + 17), columna_index)
+rellena_celda_flotante(float(Eventos_Totales_Porcent.replace(",", ".")), (fila_index + 18), columna_index)
 
-
-
+# noviembre, diciembre y enero
+# multas labradas, multas cobradas, credito vendido
 
 print(Tarjetas_Excluidas_Acumuladas)
 print(Tarjetas_en_Espera_Acumuladas)
